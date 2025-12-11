@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Türkiye Fen Atlası: Hayatla İlişkilendirilmiş Fizik</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f9ff; }
+    #map { height: 100vh; width: 100%; }
+    
+    /* Popup Tasarımı */
+    .popup-container { width: 320px; font-size: 13px; }
+    .header-box { padding: 12px; border-radius: 8px 8px 0 0; color: white; position: relative; }
+    .header-title { font-weight: bold; font-size: 16px; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .header-code { font-size: 11px; opacity: 0.95; margin-top: 4px; display: block; font-family: monospace; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; width: fit-content; }
+    
+    .content-box { background: white; padding: 12px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
+    .sim-desc { color: #334155; margin-bottom: 12px; line-height: 1.5; font-size: 12px; border-left: 3px solid #cbd5e1; padding-left: 8px; }
+    
+    /* Simülasyon Alanı */
+    .sim-area { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px; text-align: center; }
+    .sim-label { font-size: 11px; font-weight: bold; color: #334155; display: block; margin-bottom: 5px; text-align: left; }
+    input[type=range] { width: 100%; cursor: pointer; accent-color: #0284c7; }
+    
+    /* Görsel Sahne Genel */
+    .stage { height: 70px; position: relative; margin-top: 5px; background: white; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; }
+    .result-txt { font-size: 12px; font-weight: bold; color: #0284c7; margin-top: 5px; min-height: 18px; }
+
+    /* --- ANİMASYON CSS SINIFLARI --- */
+
+    /* KASTAMONU KAYAKÇI (DÜZELTİLMİŞ HALİ) */
+    .skier { position: absolute; top: 20px; left: 90%; font-size: 24px; transition: left 0.3s ease-out; }
+    
+    /* TRABZON FINDIK KIRACAĞI (YENİ HALİ) */
+    .nutcracker-stage { position: relative; height: 100%; width: 100%; }
+    .nc-hinge { position: absolute; left: 5px; bottom: 25px; width: 12px; height: 12px; background: #ef4444; border-radius: 50%; z-index: 5; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+    .nc-bar-fixed { position: absolute; left: 10px; bottom: 30px; width: 85%; height: 6px; background: #475569; border-radius: 3px; }
+    .nc-bar-moving { position: absolute; left: 10px; bottom: 30px; width: 85%; height: 6px; background: #475569; border-radius: 3px; transform-origin: left center; transition: transform 0.3s ease-out; }
+    .nc-nut { position: absolute; bottom: 31px; width: 18px; height: 18px; background: #d97706; border-radius: 50%; border: 2px solid #92400e; transition: left 0.3s ease-out; z-index: 2; box-sizing: border-box;}
+
+    /* Diğer Animasyonlar (Aynen Korundu) */
+    .travertine-layer { width: 100%; background: linear-gradient(to top, #fff, #f1f5f9); position: absolute; bottom: 0; left: 0; transition: height 0.5s ease; border-top: 2px solid #cbd5e1; opacity: 0.9; }
+    .paint-particle { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; position: absolute; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+    .sound-wave { border: 2px solid #64748b; border-radius: 50%; position: absolute; left: 30px; top: 50%; transform: translateY(-50%); transition: width 0.1s, height 0.1s, opacity 0.1s; }
+    .spring-box { width: 20px; border: 2px solid #64748b; border-top: none; position: absolute; top: 0; left: 45%; transition: height 0.2s; background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 5px, #fff 5px, #fff 10px); }
+    .weight-box { width: 30px; height: 30px; background: #ef4444; position: absolute; left: -7px; bottom: -30px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; border-radius: 4px; }
+    .rope { width: 100%; height: 4px; background: #854d0e; position: absolute; top: 30px; }
+    .rope-flag { width: 10px; height: 20px; background: #ef4444; position: absolute; top: -8px; left: 50%; transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    .crane-cable { width: 2px; background: #333; position: absolute; top: 0; left: 50%; transition: height 0.5s; }
+    .crane-load { width: 30px; height: 20px; background: #0ea5e9; position: absolute; bottom: 0; left: -14px; transition: bottom 0.5s; }
+    .lens-shape { width: 10px; height: 50px; background: #bae6fd; border: 1px solid #3b82f6; border-radius: 50%; position: absolute; left: 50%; transition: border-radius 0.3s; }
+    .light-refracted { position: absolute; height: 2px; background: #fbbf24; width: 45%; left: 55%; top: 32px; transform-origin: left center; transition: transform 0.3s; }
+    .earth-axis { font-size: 30px; transition: transform 0.5s; display: inline-block; }
+    .sun-rays { position: absolute; left: -20px; color: orange; font-size: 20px; }
+    .shadow-cast { position: absolute; bottom: 5px; height: 4px; background: rgba(0,0,0,0.4); border-radius: 50%; transition: transform 0.2s; }
+    .bulb-glow { width: 20px; height: 20px; border-radius: 50%; background: #444; transition: background 0.3s, box-shadow 0.3s; margin: 0 auto; }
+    .wind-turbine { font-size: 30px; color: #555; display: inline-block; }
+    
+    /* --- QR KUTUSU --- */
+    .qr-box { 
+        margin-top: 12px; 
+        background: #fdf2f8; 
+        border: 1px dashed #db2777; 
+        border-radius: 6px; 
+        padding: 8px; 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+    }
+    .qr-img { 
+        width: 60px;  
+        height: 60px; 
+        background: white; 
+        border: 1px solid #ddd; 
+        padding: 2px; 
+        object-fit: contain;
+        cursor: pointer; 
+        transition: transform 0.2s;
+    }
+    .qr-img:hover { transform: scale(1.05); }
+    .qr-text { font-size: 11px; color: #be185d; font-weight: 600; line-height: 1.3; }
+
+    /* --- BÜYÜK QR MODAL --- */
+    .qr-modal {
+        display: none; 
+        position: fixed;
+        z-index: 2000; 
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8); 
+        justify-content: center;
+        align-items: center;
+    }
+    .qr-modal-content {
+        position: relative;
+        background-color: #fefefe;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        text-align: center;
+    }
+    .qr-modal-img {
+        max-width: 80vw;
+        max-height: 80vh;
+        object-fit: contain;
+    }
+    .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.3s;
+    }
+    .close-btn:hover { color: #ef4444; }
+    .qr-modal-hint { display: block; margin-top: 10px; color: #555; font-size: 14px; }
+
+    .legend { position: absolute; bottom: 20px; left: 10px; background: white; padding: 10px; border-radius: 8px; z-index: 999; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 11px; }
+    .dot { width: 10px; height: 10px; display: inline-block; border-radius: 50%; margin-right: 6px; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="qrModal" class="qr-modal" onclick="closeQRModal()">
+  <div class="qr-modal-content" onclick="event.stopPropagation()"> 
+    <span class="close-btn" onclick="closeQRModal()">&times;</span>
+    <img id="modalQrImg" class="qr-modal-img" src="" alt="Büyük QR Kod">
+    <span class="qr-modal-hint">AR Deneyimi için okutunuz.</span>
+  </div>
+</div>
+
+<div class="legend">
+  <b>Sınıf Seviyeleri</b><br>
+  <span style="display:flex; align-items:center; margin-top:4px"><i class="dot" style="background:#eab308"></i> 5. Sınıf (Temel Fizik)</span>
+  <span style="display:flex; align-items:center; margin-top:4px"><i class="dot" style="background:#3b82f6"></i> 6. Sınıf (Kuvvet/Madde)</span>
+  <span style="display:flex; align-items:center; margin-top:4px"><i class="dot" style="background:#22c55e"></i> 7. Sınıf (Enerji/Optik)</span>
+  <span style="display:flex; align-items:center; margin-top:4px"><i class="dot" style="background:#ef4444"></i> 8. Sınıf (Mekanik/Isı)</span>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+  var map = L.map('map').setView([39.0, 35.5], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: 'MEB 2024 Fen Müfredatı', maxZoom: 19
+  }).addTo(map);
+
+  // --- İSTASYON VERİLERİ (AYNI) ---
+  const stations = [
+    // --- 5. SINIF ---
+    { city: "Nevşehir", coords: [38.62, 34.72], title: "Tam Gölge", grade: "5. Sınıf", code: "FB.5.4.3.1", color: "#eab308", desc: "Kapadokya'daki peri bacaları gibi opak cisimler ışığı geçirmez. Işık kaynağı peri bacasına ne kadar yaklaşırsa, arkadaki gölge o kadar büyür.", sim: "shadow" },
+    { city: "Rize", coords: [40.90, 40.90], title: "Kuvvetin Ölçülmesi", grade: "5. Sınıf", code: "FB.5.2.1.1", color: "#eab308", desc: "Teleferik telleri yük arttıkça gerilir. Dinamometreler de tıpkı bu teleferik telleri gibi, içindeki yayın uzama miktarına bakarak kuvveti (ağırlığı) ölçer.", sim: "dynamo" },
+    { city: "Gaziantep", coords: [37.06, 37.38], title: "Elektrik Devresi", grade: "5. Sınıf", code: "FB.5.6.2.1", color: "#eab308", desc: "Zeugma'daki mozaiklerin daha net görülmesi için parlak ışık gerekir. Devredeki pil (enerji kaynağı) sayısı arttıkça lambalar daha güçlü yanar.", sim: "circuit" },
+    { city: "Kastamonu", coords: [41.08, 33.73], title: "Sürtünme Kuvveti", grade: "5. Sınıf", code: "FB.5.2.3.1", color: "#eab308", desc: "Ilgaz'da kayak yaparken zemin buzluysa sürtünme azdır ve çok hızlı kayarsın. Ancak karlar eriyip toprak çıkarsa sürtünme artar ve yavaşlarsın.", sim: "friction" },
+    // --- 6. SINIF ---
+    { city: "Ankara", coords: [39.93, 32.85], title: "Sürat", grade: "6. Sınıf", code: "FB.6.2.2.1", color: "#3b82f6", desc: "Ankara'dan İstanbul'a giden Yüksek Hızlı Tren (YHT), aynı mesafeyi otobüsten çok daha kısa sürede tamamlar. Sabit bir yolu ne kadar kısa sürede alırsan, 'Sürat'in o kadar fazladır.", sim: "speed" },
+    { city: "Edirne", coords: [41.67, 26.56], title: "Bileşke Kuvvet", grade: "6. Sınıf", code: "FB.6.2.1.1", color: "#3b82f6", desc: "Kırkpınar güreşlerinde iki pehlivan birbirini zıt yöne iter. Büyük kuvvet uygulayanın (kazananın) yönünde hareket başlar. Bu fark 'Bileşke Kuvvet'tir.", sim: "force" },
+    { city: "Antalya", coords: [36.89, 30.71], title: "Genleşme", grade: "6. Sınıf", code: "FB.6.5.1.1", color: "#3b82f6", desc: "Antalya'nın yaz sıcağında tren rayları ısınarak 'genleşir' ve boyları uzar. Bu yüzden raylar döşenirken aralarında boşluk bırakılır, yoksa bozulurlar.", sim: "expansion" },
+    { city: "Van", coords: [38.62, 42.90], title: "Yoğunluk", grade: "6. Sınıf", code: "FB.6.5.3.1", color: "#3b82f6", desc: "Van Gölü'nün suyu sodalıdır, yani yoğunluğu fazladır. Suyun kaldırma kuvveti arttığı için cisimler Van Gölü'nde normal suya göre daha rahat yüzer.", sim: "density" },
+    // --- 7. SINIF ---
+    { city: "Mersin", coords: [36.80, 34.62], title: "Fiziksel İş", grade: "7. Sınıf", code: "FB.7.2.1.1", color: "#22c55e", desc: "Limandaki vinçler konteynerleri yukarı kaldırırken fiziksel anlamda iş yapar. Yük ne kadar ağırsa ve ne kadar yükseğe kaldırılırsa, yapılan iş artar.", sim: "work" },
+    { city: "Sinop", coords: [42.02, 35.15], title: "Mercekler", grade: "7. Sınıf", code: "FB.7.4.2.2", color: "#22c55e", desc: "Deniz fenerleri, ışığı kilometrelerce uzağa iletmek zorundadır. Bunun için 'İnce Kenarlı Mercek' kullanarak ışığı bir noktada toplar ve odaklayarak uzağa fırlatır.", sim: "lens" },
+    { city: "Bursa", coords: [40.18, 29.06], title: "Elektriklenme", grade: "7. Sınıf", code: "FB.7.6.1.1", color: "#22c55e", desc: "Otomobil fabrikalarında araçlar boyanırken boya tanecikleri ve araç gövdesi zıt elektrikle yüklenir. Zıt kutuplar birbirini çektiği için boya araca mıknatıs gibi yapışır.", sim: "static" },
+    { city: "Artvin", coords: [41.39, 41.42], title: "Aynalar", grade: "7. Sınıf", code: "FB.7.4.2.1", color: "#22c55e", desc: "Hopa Geçidi gibi keskin virajlarda karşıdan geleni görmek zordur. Köşelere konulan 'Tümsek Ayna', geniş bir alanı küçülterek gösterir ve kazaları önler.", sim: "mirror" },
+    { city: "İzmir", coords: [38.42, 27.14], title: "Enerji Dönüşümü", grade: "7. Sınıf", code: "FB.7.2.2.1", color: "#22c55e", desc: "Alaçatı'daki rüzgar türbinleri, rüzgarın 'Hareket Enerjisini' (Kinetik), evlerimizde kullandığımız 'Elektrik Enerjisine' dönüştürür.", sim: "wind" },
+    // --- 8. SINIF ---
+    { city: "Samsun", coords: [41.57, 36.08], title: "Mevsimler", grade: "8. Sınıf", code: "FB.8.1.1.1", color: "#ef4444", desc: "Kuşlar mevsimlere göre göç eder. Mevsimler, Dünya'nın dönme eksenindeki 'Eğiklik' sayesinde oluşur. Eksen dik olsaydı her yer yıl boyu aynı mevsimi yaşardı.", sim: "seasons" },
+    { city: "Trabzon", coords: [41.00, 39.72], title: "Basit Makineler", grade: "8. Sınıf", code: "FB.8.2.1.1", color: "#ef4444", desc: "Fındık kıracağı bir 'Kaldıraç'tır. Destek noktası fındığa (yüke) ne kadar yakınsa, uygulamanız gereken kuvvet o kadar azalır ve kırmak kolaylaşır.", sim: "lever" },
+    { city: "Ağrı", coords: [39.70, 44.29], title: "Basınç", grade: "8. Sınıf", code: "FB.8.3.1.2", color: "#ef4444", desc: "Ağrı Dağı'nın zirvesine çıkan dağcıların yanındaki kapalı balon şişer. Çünkü yükseklere çıkıldıkça balonun üzerindeki hava azalır, yani 'Açık Hava Basıncı' düşer.", sim: "pressure" },
+    { city: "Denizli", coords: [37.92, 29.12], title: "Kimyasal Değişim", grade: "8. Sınıf", code: "FB.8.5.2.1", color: "#ef4444", desc: "Pamukkale travertenleri suyun donmasıyla değil, kimyasal bir reaksiyonla oluşur. Sudaki karbondioksit uçar, kireç çöker ve beyaz kayalar oluşur.", sim: "chemical" },
+    { city: "Antalya (Aspendos)", coords: [36.94, 31.17], title: "Ses ve Akustik", grade: "8. Sınıf", code: "FB.8.4.2.2", color: "#ef4444", desc: "Aspendos Tiyatrosu'nun mimarisi, sesi yansıtarak en arka sıraya kadar iletir. Bu 'Akustik' tasarım sayesinde mikrofonsuz bile ses her yerden duyulur.", sim: "acoustic" }
+  ];
+
+  // --- SİMÜLASYON MANTIKLARI ---
+  
+  // TRABZON KALDIRAÇ FONKSİYONU (AYNI)
+  function simLever(v) {
+    let nut = document.getElementById('nc-nut');
+    let movingBar = document.getElementById('nc-bar-moving');
+    let txt = document.getElementById('r-lv');
+    let pos = 15 + (v * 0.7);
+    nut.style.left = pos + '%';
+    let angle = -5 - (v * 0.25);
+    movingBar.style.transform = `rotate(${angle}deg)`;
+    if (v < 30) txt.innerHTML = "Fındık Desteğe Yakın: <b>Kırmak Çok Kolay (Kuvvet Kazancı Büyük)</b>";
+    else if (v < 70) txt.innerHTML = "Fındık Ortada: <b>Normal Kuvvet Gerekir</b>";
+    else txt.innerHTML = "Fındık Uçta: <b>Kırmak Zor (Kuvvet Kazancı Az)</b>";
+  }
+
+  // Diğer Fonksiyonlar (AYNI)
+  function simDynamo(val) { let h = 20 + (val * 0.8); document.getElementById('spring-box').style.height = h + 'px'; document.getElementById('res-dynamo').innerHTML = `Yük: ${val}kg -> <b>Yay Uzadı: ${h}cm</b>`; }
+  function simCircuit(val) { let op = 0.2 + (val * 0.15); let b = document.getElementById('bulb-gantep'); b.style.backgroundColor = `rgba(255, 255, 0, ${op})`; b.style.boxShadow = `0 0 ${val*5}px yellow`; document.getElementById('res-circuit').innerHTML = `Pil Sayısı: ${val} -> <b>Parlaklık Artıyor</b>`; }
+  function simForce(val) { let pos = 50 + (val/2.5); document.getElementById('rope-flag').style.left = pos + '%'; document.getElementById('res-force').innerHTML = val < 10 ? "Kuvvetler Eşit: <b>Hareket Yok</b>" : "Sağ Taraf Güçlü: <b>Sağa Hareket</b>"; }
+  function simWork(val) { let cH = 60 - (val / 2); document.getElementById('crane-cable').style.height = cH + 'px'; document.getElementById('crane-load').style.bottom = (60 - cH) + 'px'; document.getElementById('res-work').innerHTML = `Yol: ${val}m -> <b>Yapılan İş: ${val * 10} J</b>`; }
+  function simLens(val) { let b = document.getElementById('light-refracted'); let l = document.getElementById('lens-shape'); if(val > 50) { b.style.transform = "rotate(15deg)"; l.style.borderRadius = "50%"; document.getElementById('res-lens').innerHTML = "İnce Kenarlı: <b>Işığı Topladı</b>"; } else { b.style.transform = "rotate(-15deg)"; l.style.borderRadius = "5px"; document.getElementById('res-lens').innerHTML = "Kalın Kenarlı: <b>Işığı Dağıttı</b>"; } }
+  function simSeasons(val) { document.getElementById('earth-axis').style.transform = `rotate(${val}deg)`; document.getElementById('res-seasons').innerHTML = val < 10 ? "Eksen Dik: <b>Mevsim Oluşmaz</b>" : `Eğiklik ${val}°: <b>Mevsimler Oluşuyor</b>`; }
+  
+  // Basitleştirilmiş Simülasyonlar (KASTAMONU DÜZELTİLDİ)
+  function simShadow(v){ let s=1+((100-v)/40); document.getElementById('sh-c').style.transform=`scale(${s})`; document.getElementById('r-sh').innerHTML=v<30?"Yakın: Büyük Gölge":"Uzak: Küçük Gölge"; }
+  function simFriction(v){ let p=90-(v*0.8); document.getElementById('skier').style.left=p+'%'; document.getElementById('r-fr').innerHTML=v<20?"Buz: Hızlı":"Toprak: Yavaş"; }
+  function simSpeed(v){ document.getElementById('car').style.marginLeft=((100-v)*2)+'px'; document.getElementById('r-sp').innerHTML=v>70?"Yavaş":"Hızlı"; }
+  function simExp(v){ let w=50+(v/3); let r=document.getElementById('rail'); r.style.width=w+'%'; r.style.backgroundColor=v>70?'#ef4444':'#333'; document.getElementById('r-ex').innerHTML=v>70?"Sıcak: Genleşti":"Normal"; }
+  function simDen(v){ let t=v<40?'10%':(v>60?'85%':'50%'); let o=document.getElementById('obj'); o.style.top=t; o.style.background=v>60?'#333':'#f59e0b'; document.getElementById('r-dn').innerHTML=v<40?"Yüzüyor":"Battı"; }
+  function simStatic(v){ let p=document.querySelectorAll('.paint-particle'); p.forEach((e,i)=>{ if(v>80){ e.style.top='15px'; e.style.left=(15+i*5)+'px'; } else { e.style.top=(i<2?-10:40)+'px'; e.style.left=(i%2==0?-20:60)+'px'; } }); document.getElementById('r-st').innerHTML=v>80?"Zıt Yük: Yapıştı":"Aynı Yük: Dağıldı"; }
+  function simMirror(v){ let m=document.getElementById('mir'); let t=document.getElementById('r-mr'); if(v<30){m.style.transform="scale(1.5) rotate(180deg)";t.innerHTML="Çukur: Ters/Büyük"}else if(v>70){m.style.transform="scale(0.5)";t.innerHTML="Tümsek: Geniş Alan"}else{m.style.transform="scale(1)";t.innerHTML="Düz Ayna"} }
+  function simWind(v){ let t=document.getElementById('turb'); let b=document.getElementById('bulb-w'); if(v>0) t.style.animation=`spin ${2.2-v/50}s linear infinite`; else t.style.animation='none'; if(v>20){b.style.background=`rgba(255,255,0,${v/100})`;}else{b.style.background='#444'} document.getElementById('r-wn').innerHTML=v>20?"Üretim Var":"Rüzgar Yok"; }
+  function simPres(v){ let s=1+(v/100); document.getElementById('bal').style.transform=`scale(${s})`; document.getElementById('r-pr').innerHTML=v>80?"Zirve: Şişti (Basınç Az)":"Deniz: Normal"; }
+  function simChem(v){ document.getElementById('trav').style.height=(v/1.5)+'%'; document.getElementById('r-ch').innerHTML=v>70?"Hızlı: Çok Tortu":"Yavaş"; }
+  function simAcoustic(v){ let w=document.getElementById('snd-w'); w.style.width=(v*2)+'px'; w.style.height=(v*2)+'px'; w.style.opacity=1-(v/150); document.getElementById('r-ac').innerHTML=v>80?"Yüksek Ses: Ulaştı!":"Düşük Ses"; }
+
+  // --- HTML ŞABLONLARI (AYNI) ---
+  function getSimHTML(st) {
+    // TRABZON HTML YAPISI (AYNI)
+    if(st.sim === 'lever') return `
+        <span class="sim-label">Fındığın Konumu (Desteğe Uzaklık):</span>
+        <input type="range" min="0" max="100" value="20" oninput="simLever(this.value)">
+        <div class="stage">
+            <div class="nutcracker-stage">
+                <div class="nc-hinge"></div>
+                <div class="nc-bar-fixed"></div>
+                <div id="nc-bar-moving" class="nc-bar-moving"></div>
+                <div id="nc-nut" class="nc-nut" style="left:20%"></div>
+            </div>
+        </div>
+        <div id="r-lv" class="result-txt">Fındık Desteğe Yakın: <b>Kırmak Çok Kolay</b></div>`;
+
+    // KASTAMONU HTML YAPISI (AYNI)
+    if(st.sim === 'friction') return `<input type="range" min="0" max="100" oninput="simFriction(this.value)"><div class="stage"><div id="skier" class="skier">⛷️</div></div><div id="r-fr" class="result-txt">...</div>`;
+
+    // Diğer HTML'ler (AYNI)
+    if(st.sim === 'dynamo') return `<span class="sim-label">Çay Yükü Miktarı:</span><input type="range" min="0" max="60" oninput="simDynamo(this.value)"><div class="stage" style="align-items:flex-start"><div id="spring-box" class="spring-box" style="height:20px"><div class="weight-box">Çay</div></div></div><div id="res-dynamo" class="result-txt">...</div>`;
+    if(st.sim === 'circuit') return `<span class="sim-label">Pil Sayısı (Gerilim):</span><input type="range" min="1" max="5" value="1" oninput="simCircuit(this.value)"><div class="stage"><div id="bulb-gantep" class="bulb-glow" style="background:#555"></div></div><div id="res-circuit" class="result-txt">Az Parlak</div>`;
+    if(st.sim === 'force') return `<span class="sim-label">Sağ Takım Gücü:</span><input type="range" min="0" max="100" value="0" oninput="simForce(this.value)"><div class="stage"><div class="rope"><div id="rope-flag" class="rope-flag" style="left:50%"></div></div><span style="position:absolute;left:10px">⬅️</span><span style="position:absolute;right:10px">➡️</span></div><div id="res-force" class="result-txt">Dengede</div>`;
+    if(st.sim === 'work') return `<span class="sim-label">Kaldırma Yüksekliği (Yol):</span><input type="range" min="0" max="50" value="0" oninput="simWork(this.value)"><div class="stage"><div id="crane-cable" class="crane-cable" style="height:60px"></div><div id="crane-load" class="crane-load" style="bottom:0"></div></div><div id="res-work" class="result-txt">İş = 0</div>`;
+    if(st.sim === 'lens') return `<span class="sim-label">Mercek Tipi:</span><input type="range" min="0" max="100" value="50" oninput="simLens(this.value)"><div class="stage"><div class="light-beam"></div><div id="lens-shape" class="lens-shape"></div><div id="light-refracted" class="light-refracted"></div></div><div id="res-lens" class="result-txt">...</div>`;
+    if(st.sim === 'seasons') return `<span class="sim-label">Eksen Eğikliği:</span><input type="range" min="0" max="50" value="23" oninput="simSeasons(this.value)"><div class="stage"><div class="sun-rays">☀️</div><div id="earth-axis" class="earth-axis" style="transform:rotate(23deg)">🌍</div></div><div id="res-seasons" class="result-txt">Eğiklik Var</div>`;
+    if(st.sim === 'shadow') return `<input type="range" min="10" max="100" oninput="simShadow(this.value)"><div class="stage" style="align-items:flex-end"><div style="font-size:24px;z-index:2">🍄</div><div id="sh-c" class="shadow-cast" style="width:30px;left:45%"></div></div><div id="r-sh" class="result-txt">...</div>`;
+    if(st.sim === 'speed') return `<input type="range" min="10" max="100" oninput="simSpeed(this.value)"><div class="stage" style="justify-content:flex-start"><div id="car" style="font-size:20px">🏎️</div></div><div id="r-sp" class="result-txt">...</div>`;
+    if(st.sim === 'expansion') return `<input type="range" min="0" max="100" oninput="simExp(this.value)"><div class="stage"><div id="rail" style="height:6px;width:50%;background:#333;transition:width 0.3s"></div></div><div id="r-ex" class="result-txt">...</div>`;
+    if(st.sim === 'density') return `<input type="range" min="0" max="100" oninput="simDen(this.value)"><div class="stage" style="background:linear-gradient(to bottom, #bae6fd, #3b82f6)"><div id="obj" style="width:20px;height:20px;background:#f59e0b;position:absolute;left:45%;transition:top 0.5s"></div></div><div id="r-dn" class="result-txt">...</div>`;
+    if(st.sim === 'static') return `<input type="range" min="0" max="100" oninput="simStatic(this.value)"><div class="stage"><div style="font-size:30px;position:relative">🚗<div class="paint-particle" style="top:-10px;left:-20px"></div><div class="paint-particle" style="top:40px;left:60px"></div></div></div><div id="r-st" class="result-txt">...</div>`;
+    if(st.sim === 'mirror') return `<input type="range" min="0" max="100" oninput="simMirror(this.value)"><div class="stage"><div style="border:2px solid #999;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center"><div id="mir" style="font-size:25px;transition:transform 0.3s">🚙</div></div></div><div id="r-mr" class="result-txt">...</div>`;
+    if(st.sim === 'wind') return `<input type="range" min="0" max="100" value="0" oninput="simWind(this.value)"><div class="stage"><div id="turb" class="wind-turbine">XXXX</div><div id="bulb-w" class="bulb-glow"></div></div><div id="r-wn" class="result-txt">...</div>`;
+    if(st.sim === 'pressure') return `<input type="range" min="0" max="100" oninput="simPres(this.value)"><div class="stage"><div id="bal" style="font-size:20px;transition:transform 0.3s">🎈</div></div><div id="r-pr" class="result-txt">...</div>`;
+    if(st.sim === 'chemical') return `<input type="range" min="0" max="100" oninput="simChem(this.value)"><div class="stage" style="align-items:flex-end;background:#3b82f6"><div id="trav" class="travertine-layer"></div></div><div id="r-ch" class="result-txt">...</div>`;
+    if(st.sim === 'acoustic') return `<input type="range" min="0" max="100" oninput="simAcoustic(this.value)"><div class="stage"><div style="position:absolute;left:5px">📢</div><div id="snd-w" class="sound-wave"></div><div style="position:absolute;right:5px">👂</div></div><div id="r-ac" class="result-txt">...</div>`;
+    return '';
+  }
+
+  // --- RESİM YOLU OLUŞTURUCU (PNG) (AYNI) ---
+  function getQRPath(city) {
+    const map = { 'ç':'c', 'ğ':'g', 'ı':'i', 'ö':'o', 'ş':'s', 'ü':'u', 'Ç':'c', 'Ğ':'g', 'İ':'i', 'Ö':'o', 'Ş':'s', 'Ü':'u', ' ': '' };
+    let clean = city.replace(/[çğıöşüÇĞİÖŞÜ ]/g, function(n){ return map[n]; }).toLowerCase();
+    return `image/${clean}.png`; 
+  }
+
+  // --- MODAL FONKSİYONLARI (AYNI) ---
+  function openQRModal(imgSrc) {
+    document.getElementById('modalQrImg').src = imgSrc;
+    document.getElementById('qrModal').style.display = 'flex';
+  }
+
+  function closeQRModal() {
+    document.getElementById('qrModal').style.display = 'none';
+  }
+
+  stations.forEach(st => {
+    // --- ASPENDOS QR DÜZELTMESİ ---
+    let qrBaseName;
+    if (st.city.includes("Aspendos")) {
+        qrBaseName = "aspendos"; // Antalya (Aspendos) için özel isim
+    } else {
+        qrBaseName = st.city.split(" ")[0]; // Diğerleri için ilk kelime
+    }
+    let qrSrc = getQRPath(qrBaseName);
+
+    let popupHTML = `
+      <div class="popup-container">
+        <div class="header-box" style="background:${st.color}">
+          <h3 class="header-title">${st.city}</h3>
+          <span style="font-size:12px; opacity:0.9">${st.title}</span>
+          <span class="header-code">${st.grade} (${st.code})</span>
+        </div>
+        <div class="content-box">
+          <div class="sim-desc">${st.desc}</div>
+          <div class="sim-area">${getSimHTML(st)}</div>
+          <div class="qr-box">
+            <img src="${qrSrc}" class="qr-img" onclick="openQRModal('${qrSrc}')" onerror="this.src='https://via.placeholder.com/60?text=QR'">
+            <div class="qr-text">AR Deneyimi<br>İçin Tıkla</div>
+          </div>
+        </div>
+      </div>
+    `;
+    L.circleMarker(st.coords, {
+      color: st.color, fillColor: st.color, fillOpacity: 0.8, radius: 10
+    }).addTo(map).bindPopup(popupHTML);
+  });
+
+  var styleSheet = document.createElement("style");
+  styleSheet.innerText = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
+  document.head.appendChild(styleSheet);
+</script>
+</body>
+</html>
