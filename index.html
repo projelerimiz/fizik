@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Türkiye Fen Atlası: Hayatla İlişkilendirilmiş Fizik</title>
+  <title>Türkiye Fizik Haritası</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   
   <style>
@@ -30,17 +30,20 @@
 
     /* --- ANİMASYON CSS SINIFLARI --- */
 
-    /* KASTAMONU KAYAKÇI (DÜZELTİLMİŞ HALİ) */
+    /* GAZİANTEP LAMBA (GÜNCELLENDİ) */
+    .bulb-glow { width: 24px; height: 24px; border-radius: 50%; background: #444; transition: background 0.3s, box-shadow 0.3s; margin: 0 auto; border: 1px solid #ccc; }
+
+    /* KASTAMONU KAYAKÇI */
     .skier { position: absolute; top: 20px; left: 90%; font-size: 24px; transition: left 0.3s ease-out; }
     
-    /* TRABZON FINDIK KIRACAĞI (YENİ HALİ) */
+    /* TRABZON FINDIK KIRACAĞI */
     .nutcracker-stage { position: relative; height: 100%; width: 100%; }
     .nc-hinge { position: absolute; left: 5px; bottom: 25px; width: 12px; height: 12px; background: #ef4444; border-radius: 50%; z-index: 5; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
     .nc-bar-fixed { position: absolute; left: 10px; bottom: 30px; width: 85%; height: 6px; background: #475569; border-radius: 3px; }
     .nc-bar-moving { position: absolute; left: 10px; bottom: 30px; width: 85%; height: 6px; background: #475569; border-radius: 3px; transform-origin: left center; transition: transform 0.3s ease-out; }
     .nc-nut { position: absolute; bottom: 31px; width: 18px; height: 18px; background: #d97706; border-radius: 50%; border: 2px solid #92400e; transition: left 0.3s ease-out; z-index: 2; box-sizing: border-box;}
 
-    /* Diğer Animasyonlar (Aynen Korundu) */
+    /* Diğer Animasyonlar */
     .travertine-layer { width: 100%; background: linear-gradient(to top, #fff, #f1f5f9); position: absolute; bottom: 0; left: 0; transition: height 0.5s ease; border-top: 2px solid #cbd5e1; opacity: 0.9; }
     .paint-particle { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; position: absolute; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
     .sound-wave { border: 2px solid #64748b; border-radius: 50%; position: absolute; left: 30px; top: 50%; transform: translateY(-50%); transition: width 0.1s, height 0.1s, opacity 0.1s; }
@@ -55,7 +58,6 @@
     .earth-axis { font-size: 30px; transition: transform 0.5s; display: inline-block; }
     .sun-rays { position: absolute; left: -20px; color: orange; font-size: 20px; }
     .shadow-cast { position: absolute; bottom: 5px; height: 4px; background: rgba(0,0,0,0.4); border-radius: 50%; transition: transform 0.2s; }
-    .bulb-glow { width: 20px; height: 20px; border-radius: 50%; background: #444; transition: background 0.3s, box-shadow 0.3s; margin: 0 auto; }
     .wind-turbine { font-size: 30px; color: #555; display: inline-block; }
     
     /* --- QR KUTUSU --- */
@@ -151,7 +153,7 @@
     attribution: 'MEB 2024 Fen Müfredatı', maxZoom: 19
   }).addTo(map);
 
-  // --- İSTASYON VERİLERİ (AYNI) ---
+  // --- İSTASYON VERİLERİ ---
   const stations = [
     // --- 5. SINIF ---
     { city: "Nevşehir", coords: [38.62, 34.72], title: "Tam Gölge", grade: "5. Sınıf", code: "FB.5.4.3.1", color: "#eab308", desc: "Kapadokya'daki peri bacaları gibi opak cisimler ışığı geçirmez. Işık kaynağı peri bacasına ne kadar yaklaşırsa, arkadaki gölge o kadar büyür.", sim: "shadow" },
@@ -179,7 +181,27 @@
 
   // --- SİMÜLASYON MANTIKLARI ---
   
-  // TRABZON KALDIRAÇ FONKSİYONU (AYNI)
+  // GAZİANTEP DEVRE (GÜNCELLENDİ: ARTIK TAM KAPANIYOR)
+  function simCircuit(val) { 
+    let v = parseInt(val);
+    let bulb = document.getElementById('bulb-gantep');
+    let res = document.getElementById('res-circuit');
+    
+    // Değer 1 ise (en az), lamba sönük (gri) olsun.
+    if(v <= 1) {
+        bulb.style.backgroundColor = "#444"; // Koyu gri (Sönük)
+        bulb.style.boxShadow = "none";
+        res.innerHTML = `Pil Sayısı: ${v} -> <b>Lamba Sönük/Az Işık</b>`;
+    } else {
+        // Pil arttıkça parlaklık artsın
+        let opacity = 0.4 + (v * 0.12); 
+        bulb.style.backgroundColor = `rgba(255, 255, 0, ${opacity})`;
+        bulb.style.boxShadow = `0 0 ${v * 8}px yellow`; // Glow efekti artıyor
+        res.innerHTML = `Pil Sayısı: ${v} -> <b>Parlaklık Artıyor</b>`;
+    }
+  }
+
+  // TRABZON KALDIRAÇ
   function simLever(v) {
     let nut = document.getElementById('nc-nut');
     let movingBar = document.getElementById('nc-bar-moving');
@@ -193,15 +215,14 @@
     else txt.innerHTML = "Fındık Uçta: <b>Kırmak Zor (Kuvvet Kazancı Az)</b>";
   }
 
-  // Diğer Fonksiyonlar (AYNI)
+  // Diğer Fonksiyonlar
   function simDynamo(val) { let h = 20 + (val * 0.8); document.getElementById('spring-box').style.height = h + 'px'; document.getElementById('res-dynamo').innerHTML = `Yük: ${val}kg -> <b>Yay Uzadı: ${h}cm</b>`; }
-  function simCircuit(val) { let op = 0.2 + (val * 0.15); let b = document.getElementById('bulb-gantep'); b.style.backgroundColor = `rgba(255, 255, 0, ${op})`; b.style.boxShadow = `0 0 ${val*5}px yellow`; document.getElementById('res-circuit').innerHTML = `Pil Sayısı: ${val} -> <b>Parlaklık Artıyor</b>`; }
   function simForce(val) { let pos = 50 + (val/2.5); document.getElementById('rope-flag').style.left = pos + '%'; document.getElementById('res-force').innerHTML = val < 10 ? "Kuvvetler Eşit: <b>Hareket Yok</b>" : "Sağ Taraf Güçlü: <b>Sağa Hareket</b>"; }
   function simWork(val) { let cH = 60 - (val / 2); document.getElementById('crane-cable').style.height = cH + 'px'; document.getElementById('crane-load').style.bottom = (60 - cH) + 'px'; document.getElementById('res-work').innerHTML = `Yol: ${val}m -> <b>Yapılan İş: ${val * 10} J</b>`; }
   function simLens(val) { let b = document.getElementById('light-refracted'); let l = document.getElementById('lens-shape'); if(val > 50) { b.style.transform = "rotate(15deg)"; l.style.borderRadius = "50%"; document.getElementById('res-lens').innerHTML = "İnce Kenarlı: <b>Işığı Topladı</b>"; } else { b.style.transform = "rotate(-15deg)"; l.style.borderRadius = "5px"; document.getElementById('res-lens').innerHTML = "Kalın Kenarlı: <b>Işığı Dağıttı</b>"; } }
   function simSeasons(val) { document.getElementById('earth-axis').style.transform = `rotate(${val}deg)`; document.getElementById('res-seasons').innerHTML = val < 10 ? "Eksen Dik: <b>Mevsim Oluşmaz</b>" : `Eğiklik ${val}°: <b>Mevsimler Oluşuyor</b>`; }
   
-  // Basitleştirilmiş Simülasyonlar (KASTAMONU DÜZELTİLDİ)
+  // Basitleştirilmiş Simülasyonlar
   function simShadow(v){ let s=1+((100-v)/40); document.getElementById('sh-c').style.transform=`scale(${s})`; document.getElementById('r-sh').innerHTML=v<30?"Yakın: Büyük Gölge":"Uzak: Küçük Gölge"; }
   function simFriction(v){ let p=90-(v*0.8); document.getElementById('skier').style.left=p+'%'; document.getElementById('r-fr').innerHTML=v<20?"Buz: Hızlı":"Toprak: Yavaş"; }
   function simSpeed(v){ document.getElementById('car').style.marginLeft=((100-v)*2)+'px'; document.getElementById('r-sp').innerHTML=v>70?"Yavaş":"Hızlı"; }
@@ -214,9 +235,10 @@
   function simChem(v){ document.getElementById('trav').style.height=(v/1.5)+'%'; document.getElementById('r-ch').innerHTML=v>70?"Hızlı: Çok Tortu":"Yavaş"; }
   function simAcoustic(v){ let w=document.getElementById('snd-w'); w.style.width=(v*2)+'px'; w.style.height=(v*2)+'px'; w.style.opacity=1-(v/150); document.getElementById('r-ac').innerHTML=v>80?"Yüksek Ses: Ulaştı!":"Düşük Ses"; }
 
-  // --- HTML ŞABLONLARI (AYNI) ---
+  // --- HTML ŞABLONLARI ---
   function getSimHTML(st) {
-    // TRABZON HTML YAPISI (AYNI)
+    if(st.sim === 'circuit') return `<span class="sim-label">Pil Sayısı (Gerilim):</span><input type="range" min="1" max="5" value="1" oninput="simCircuit(this.value)"><div class="stage"><div id="bulb-gantep" class="bulb-glow" style="background:#444"></div></div><div id="res-circuit" class="result-txt">Az Parlak</div>`;
+    
     if(st.sim === 'lever') return `
         <span class="sim-label">Fındığın Konumu (Desteğe Uzaklık):</span>
         <input type="range" min="0" max="100" value="20" oninput="simLever(this.value)">
@@ -230,12 +252,9 @@
         </div>
         <div id="r-lv" class="result-txt">Fındık Desteğe Yakın: <b>Kırmak Çok Kolay</b></div>`;
 
-    // KASTAMONU HTML YAPISI (AYNI)
     if(st.sim === 'friction') return `<input type="range" min="0" max="100" oninput="simFriction(this.value)"><div class="stage"><div id="skier" class="skier">⛷️</div></div><div id="r-fr" class="result-txt">...</div>`;
 
-    // Diğer HTML'ler (AYNI)
     if(st.sim === 'dynamo') return `<span class="sim-label">Çay Yükü Miktarı:</span><input type="range" min="0" max="60" oninput="simDynamo(this.value)"><div class="stage" style="align-items:flex-start"><div id="spring-box" class="spring-box" style="height:20px"><div class="weight-box">Çay</div></div></div><div id="res-dynamo" class="result-txt">...</div>`;
-    if(st.sim === 'circuit') return `<span class="sim-label">Pil Sayısı (Gerilim):</span><input type="range" min="1" max="5" value="1" oninput="simCircuit(this.value)"><div class="stage"><div id="bulb-gantep" class="bulb-glow" style="background:#555"></div></div><div id="res-circuit" class="result-txt">Az Parlak</div>`;
     if(st.sim === 'force') return `<span class="sim-label">Sağ Takım Gücü:</span><input type="range" min="0" max="100" value="0" oninput="simForce(this.value)"><div class="stage"><div class="rope"><div id="rope-flag" class="rope-flag" style="left:50%"></div></div><span style="position:absolute;left:10px">⬅️</span><span style="position:absolute;right:10px">➡️</span></div><div id="res-force" class="result-txt">Dengede</div>`;
     if(st.sim === 'work') return `<span class="sim-label">Kaldırma Yüksekliği (Yol):</span><input type="range" min="0" max="50" value="0" oninput="simWork(this.value)"><div class="stage"><div id="crane-cable" class="crane-cable" style="height:60px"></div><div id="crane-load" class="crane-load" style="bottom:0"></div></div><div id="res-work" class="result-txt">İş = 0</div>`;
     if(st.sim === 'lens') return `<span class="sim-label">Mercek Tipi:</span><input type="range" min="0" max="100" value="50" oninput="simLens(this.value)"><div class="stage"><div class="light-beam"></div><div id="lens-shape" class="lens-shape"></div><div id="light-refracted" class="light-refracted"></div></div><div id="res-lens" class="result-txt">...</div>`;
@@ -253,14 +272,14 @@
     return '';
   }
 
-  // --- RESİM YOLU OLUŞTURUCU (PNG) (AYNI) ---
+  // --- RESİM YOLU OLUŞTURUCU (PNG) ---
   function getQRPath(city) {
     const map = { 'ç':'c', 'ğ':'g', 'ı':'i', 'ö':'o', 'ş':'s', 'ü':'u', 'Ç':'c', 'Ğ':'g', 'İ':'i', 'Ö':'o', 'Ş':'s', 'Ü':'u', ' ': '' };
     let clean = city.replace(/[çğıöşüÇĞİÖŞÜ ]/g, function(n){ return map[n]; }).toLowerCase();
     return `image/${clean}.png`; 
   }
 
-  // --- MODAL FONKSİYONLARI (AYNI) ---
+  // --- MODAL FONKSİYONLARI ---
   function openQRModal(imgSrc) {
     document.getElementById('modalQrImg').src = imgSrc;
     document.getElementById('qrModal').style.display = 'flex';
@@ -271,7 +290,7 @@
   }
 
   stations.forEach(st => {
-    // --- ASPENDOS QR DÜZELTMESİ ---
+    // --- ASPENDOS QR DÜZELTMESİ (ÖNEMLİ) ---
     let qrBaseName;
     if (st.city.includes("Aspendos")) {
         qrBaseName = "aspendos"; // Antalya (Aspendos) için özel isim
